@@ -3,7 +3,7 @@ from kokuqe import api, config
 def test_api_client():
     koku_cfg = config.get_config().get('koku', {})
 
-    client = api.Client()
+    client = api.Client(username=koku_cfg.get('username'), password=koku_cfg.get('password'))
     assert client.token, 'No token provided after logging in'
 
     response = client.get_user()

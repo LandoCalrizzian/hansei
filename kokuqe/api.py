@@ -123,7 +123,7 @@ class Client(object):
 
     def __init__(
             self, response_handler=None, url=None,
-            authenticate=True, server_username=None, server_password=None):
+            authenticate=True, username=None, password=None):
         """Initialize this object, collecting base URL from config file.
 
         If no response handler is specified, use the `code_handler` which will
@@ -147,8 +147,8 @@ class Client(object):
             response_handler - Customer handler wrapper for formatting response
             url - Url for the Koku server. Default is localhost (127.0.0.1)
             authenticate - If True, login to the server during initialization
-            server_username - Username used for server authentication
-            server_password - Password used for server authentication
+            username - Username used for server authentication
+            password - Password used for server authentication
         """
         # Stores the response of the last request made.
         self._last_response = None
@@ -183,24 +183,21 @@ class Client(object):
             self.response_handler = response_handler
 
         if authenticate:
-            self.login(username=server_username, password=server_password)
+            self.login(username=username, password=password)
 
-    def login(self, username=None, password=None):
+    def login(self, username, password):
         """Login to the server to receive an authorization token.
         
         Arguments:
             username - Username for initial server authentication
             password - Password for initial server authentication
         """
-        cfg = config.get_config().get('koku', {})
-        server_username = username or cfg.get('username', KOKU_DEFAULT_USER)
-        server_password = password or cfg.get('password', KOKU_DEFAULT_PASSWORD)
         login_request = self.request(
             'POST',
             urljoin(self.url, KOKU_TOKEN_PATH),
             json={
-                'username': server_username,
-                'password': server_password
+                'username': username,
+                'password': password
             }
         )
         self.token = login_request.json()['token']
