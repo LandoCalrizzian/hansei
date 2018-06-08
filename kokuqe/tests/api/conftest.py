@@ -16,8 +16,8 @@ def new_customer():
     uniq_string = fauxfactory.gen_string('alphanumeric', 8)
     name='Customer {}'.format(uniq_string)
     owner={
-        'username': 'user_{}'.format(uniq_string),
-        'email': 'user_{0}@{0}.com'.format(uniq_string),
+        'username': 'owner_{}'.format(uniq_string),
+        'email': 'owner_{0}@{0}.com'.format(uniq_string),
         'password': 'redhat', }
 
     #TODO: Implement lazy authentication of the client for new KokuObject() fixtures
