@@ -185,6 +185,11 @@ class Client(object):
         if authenticate:
             self.login(username=username, password=password)
 
+    @property
+    def logged_in(self):
+        """Returns True if the client is currently logged in"""
+        return self.token is not None
+
     def login(self, username, password):
         """Login to the server to receive an authorization token.
         

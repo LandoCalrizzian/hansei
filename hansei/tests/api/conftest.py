@@ -30,7 +30,9 @@ def new_customer(service_admin):
 def new_user(new_customer):
     """Create a new Koku user without authenticating to the server"""
     uniq_string = fauxfactory.gen_string('alphanumeric', 8)
-    new_customer.login()
+
+    if not new_customer.logged_in:
+        new_customer.login()
 
     return new_customer.create_user(
         username='user_{}'.format(uniq_string),
