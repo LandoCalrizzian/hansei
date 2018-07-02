@@ -14,7 +14,7 @@ def test_validate_totalcost():
     """Test to validate the total cost.The total cost should be equal to the sum
     of all the daily costs"""
 
-    sum = 0.0  # Total sum of daily costs
+    cost_sum = 0.0  # Total sum of daily costs
 
     # Login as test_customer
     customer = KokuCustomer(owner={'username': 'test_customer',
@@ -26,8 +26,13 @@ def test_validate_totalcost():
 
     # Fetch daily costs and sum up the values
     for d in report.data:
-        sum = sum + (d['total_cost'] if d['total_cost'] else 0.0)
+        # Currently the default cost report returns a list of dictionary objects
+        # with cost date as the key. The value of the dictionary is a list of
+        # dictionary objects that contain the costs of each day.
+        for cost_date in d.keys():
+            for cost_item in d[cost_date]:
+                cost_sum = cost_sum + (cost_item['total'] if cost_item['total'] else 0.0)
 
-    assert report.total['value'] - DEVIATION <= sum <= \
+    assert report.total['value'] - DEVIATION <= cost_sum <= \
         report.total['value'] + DEVIATION, \
         'Report total is not equal to the sum of daily costs'
