@@ -1,6 +1,7 @@
 # coding: utf-8
 """Models for use with the Koku API."""
 
+import decimal
 from pprint import pformat
 from urllib.parse import urljoin
 
@@ -696,6 +697,34 @@ class KokuCostReport(KokuBaseReport):
         super().__init__(client)
         self.endpoint = KOKU_COST_REPORTS_PATH
 
+    def calculate_total(self):
+        """
+        Calculates the total cost by adding all of the cost items reported in report data
+        Report data generally takes the format of:
+        data: [
+            {
+                FILTER_TIME_SCOPE_UNIT: [
+                    {
+                        GROUP_BY_UNIT: 
+                    }
+                ]
+            }
+        ]
+        """
+        # Check to see if we have a report saved
+        if not self.data:
+            return None
+
+        total_cost = decimal.Decimal(0.0)
+        for report_item in self.data:
+            for report_key in report_item:
+                cost_item_list = report_item[report_key]
+                for cost_item in cost_item_list:
+                    total_cost = total_cost + (decimal.Decimal(cost_item['total']) if cost_item['total'] else 0.0)
+
+        return total_cost
+
     @property
     def total(self):
+        """Returns the total json object of the report response"""
         return self.last_report.get('total') if self.last_report else None
