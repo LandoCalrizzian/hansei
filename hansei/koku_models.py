@@ -703,9 +703,12 @@ class KokuCostReport(KokuBaseReport):
         Report data generally takes the format of:
         data: [
             {
-                FILTER_TIME_SCOPE_UNIT: [
+                date: YYYY-MM-DD
+                values: [
                     {
-                        GROUP_BY_UNIT: 
+                       date: DATE
+                       units: CURRENCY
+                       total: COST
                     }
                 ]
             }
@@ -717,10 +720,9 @@ class KokuCostReport(KokuBaseReport):
 
         total_cost = decimal.Decimal(0.0)
         for report_item in self.data:
-            for report_key in report_item:
-                cost_item_list = report_item[report_key]
-                for cost_item in cost_item_list:
-                    total_cost = total_cost + (decimal.Decimal(cost_item['total']) if cost_item['total'] else 0.0)
+            cost_item_list = report_item['values']
+            for cost_item in cost_item_list:
+                total_cost = total_cost + (decimal.Decimal(cost_item['total']) if cost_item['total'] else 0.0)
 
         return total_cost
 
