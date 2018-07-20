@@ -25,4 +25,4 @@ KOKU_USER_PATH = 'users/'
 KOKU_PROVIDER_PATH = 'providers/'
 
 #The path to the endpoint used for reporting.
-KOKU_COST_REPORTS_PATH = 'reports/costs'
+KOKU_COST_REPORTS_PATH = 'reports/costs/'
