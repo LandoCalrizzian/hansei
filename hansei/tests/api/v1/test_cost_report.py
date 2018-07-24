@@ -59,7 +59,7 @@ def test_validate_totalcost(report_filter, group_by):
 
 
     if cost_sum is None:
-        assert len(report.cost_line_items()) == 0, (
+        assert len(report.report_line_items()) == 0, (
             "Total cost is None but there are costs in the report")
     else:
         assert report.total['value'] - DEVIATION <= cost_sum <= \

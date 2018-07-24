@@ -29,3 +29,6 @@ KOKU_COST_REPORTS_PATH = 'reports/costs/'
 
 # The path to the endpoint used for storage inventory reporting.
 KOKU_STORAGE_REPORTS_PATH = 'reports/inventory/storage/'
+
+# The path to the endpoint used for instance inventory reporting.
+KOKU_INSTANCE_REPORTS_PATH = 'reports/inventory/instance-type/'

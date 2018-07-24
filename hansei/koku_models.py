@@ -14,7 +14,8 @@ from hansei.constants import (
     KOKU_USER_PATH,
     KOKU_PROVIDER_PATH,
     KOKU_COST_REPORTS_PATH,
-    KOKU_STORAGE_REPORTS_PATH
+    KOKU_STORAGE_REPORTS_PATH,
+    KOKU_INSTANCE_REPORTS_PATH
 )
 
 
@@ -645,6 +646,9 @@ class KokuBaseReport(object):
         self.endpoint = None
         self.last_report = None
 
+        # Initialize all properties storing all cached report data
+        self._clear_report_cache()
+
     def get(self, report_filter=None, order_by=None, group_by=None):
         """
         Arguments:
@@ -675,6 +679,9 @@ class KokuBaseReport(object):
             for key, val in report_filter.items():
                 query_params['filter[{}]'.format(key)] = val
 
+        # Clear the cache of items from the last report
+        self._clear_report_cache()
+
         response = self.client.get(self.endpoint, params=query_params)
         self.last_report = response.json()
 
@@ -699,17 +706,10 @@ class KokuBaseReport(object):
     def data(self):
         return self.last_report.get('data') if self.last_report else None
 
-    def report_line_items(self, data=None):
-        """
-        Returns a list of the 'total' value of an item fetched from the individual rows in the
-        report.The item could be total cost or total storage usage.
+    def _clear_report_cache(self):
+        """ Clear all of the data that we cached during operations on the last report"""
 
-        Arguments:
-            data (List OR dict)- data object as returned by a Koku report request
-        """
-        data = data or self.data
-
-        return self._traverse_report_line_items(data)
+        self._line_items = None
 
     def _traverse_report_line_items(self, root_object):
         """
@@ -738,6 +738,23 @@ class KokuBaseReport(object):
                         line_item_list.extend(self._traverse_report_line_items(val))
 
         return line_item_list
+
+    def report_line_items(self, data=None):
+        """
+        Returns a list of the 'total' value of an item fetched from the individual rows in the
+        report.The item could be total cost or total storage usage.
+
+        Arguments:
+            data (List OR dict)- data object as returned by a Koku report request
+        """
+        data = data or self.data
+
+        if self._line_items:
+            return self._line_items
+
+        self._line_items = self._traverse_report_line_items(data)
+
+        return self._line_items
 
     def calculate_total(self):
         """
@@ -815,3 +832,55 @@ class KokuStorageReport(KokuBaseReport):
     def __init__(self, client):
         super().__init__(client)
         self.endpoint = KOKU_STORAGE_REPORTS_PATH
+
+
+class KokuInstanceReport(KokuBaseReport):
+    """
+    Class for interacting with the Koku Instance Reporting object as returned by
+    the Koku json response.
+
+    Instance inventory report data generally takes the format of:
+    "data": [
+        {
+            "date": "YYYY-MM-DD",
+            "instance_types": [
+                {
+                    "instance_type": "AWS.INSTANCE_TYPE",
+                    "values": [
+                        {
+                            "date": "YYYY-MM",
+                            "units": "Hrs",
+                            "instance_type": "AWS.INSTANCE_TYPE",
+                            "total": XYZ.0,
+                            "count": XYZ
+                        }
+                    ]
+                },
+            ]
+        }]
+    """
+    def __init__(self, client):
+        super().__init__(client)
+        self.endpoint = KOKU_INSTANCE_REPORTS_PATH
+
+    def calculate_total_instance_count(self):
+        """
+        Calculates the total number of instances in reported by adding all of the individual
+        items reported in report data.
+        """
+        # Check to see if we have a report saved
+        if not self.data:
+            return None
+
+        total_count = 0
+        item_list = self.report_line_items(self.data)
+        for item in item_list:
+            total_count = total_count + (
+                decimal.Decimal(item['count']) if item['count'] else 0)
+
+        # Koku will return a null total if the report data list is empty
+        if len(item_list) == 0:
+            total_count = None
+
+        return total_count
+
