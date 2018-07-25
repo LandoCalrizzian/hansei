@@ -4,6 +4,7 @@ from requests.exceptions import HTTPError
 from hansei.tests.api.conftest import HanseiBaseTestAPI
 
 
+@pytest.mark.smoke
 class TestCustomerCrud(HanseiBaseTestAPI):
     """Create a new customer, read the customer data from the server and delete
     the customer

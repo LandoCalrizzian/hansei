@@ -5,6 +5,7 @@ from hansei import config
 from hansei.koku_models import KokuCustomer, KokuProvider, KokuServiceAdmin, KokuUser
 
 
+@pytest.mark.smoke
 class TestUserCrud(object):
     @pytest.fixture(scope='class')
     def service_admin(self):
