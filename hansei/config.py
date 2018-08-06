@@ -6,7 +6,6 @@ systems. For example, it needs to know the username, hostname and password of a
 system in order to SSH into it.
 """
 import os
-from copy import deepcopy
 
 from xdg import BaseDirectory
 
@@ -22,13 +21,13 @@ _CONFIG = None
 
 
 def get_config():
-    """Return a copy of the global config dictionary.
+    """Return a reference to the global config dictionary.
 
     This method makes use of a cache. If the cache is empty, the configuration
-    file is parsed and the cache is populated. Otherwise, a copy of the cached
+    file is parsed and the cache is populated. Otherwise, the static
     configuration object is returned.
 
-    :returns: A copy of the global server configuration object.
+    :returns: A reference to the global server configuration object.
     """
     global _CONFIG  # pylint:disable=global-statement
     if _CONFIG is None:
@@ -42,29 +41,7 @@ def get_config():
         with open(config_yaml) as f:
             _CONFIG = yaml.load(f)
 
-    env_hostname = os.environ.get('KOKU_HOSTNAME')
-    env_port = os.environ.get('KOKU_PORT')
-    env_service_admin_user = os.environ.get('KOKU_SERVICE_ADMIN_USER')
-    env_service_admin_password = os.environ.get('KOKU_SERVICE_ADMIN_PASSWORD')
-
-    if env_hostname:
-        if 'koku' not in _CONFIG:
-            _CONFIG['koku'] = {}
-        _CONFIG['koku']['hostname'] = env_hostname
-    if env_port:
-        if 'koku' not in _CONFIG:
-            _CONFIG['koku'] = {}
-        _CONFIG['koku']['port'] = env_port
-    if env_service_admin_user:
-        if 'koku' not in _CONFIG:
-            _CONFIG['koku'] = {}
-        _CONFIG['koku']['username'] = env_service_admin_user
-    if env_service_admin_password:
-        if 'koku' not in _CONFIG:
-            _CONFIG['koku'] = {}
-        _CONFIG['koku']['password'] = env_service_admin_password
-
-    return deepcopy(_CONFIG)
+    return _CONFIG
 
 
 def _get_config_file_path(xdg_config_dir, xdg_config_file):
