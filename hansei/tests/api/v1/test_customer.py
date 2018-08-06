@@ -1,4 +1,6 @@
+import fauxfactory
 import pytest
+import uuid
 from requests.exceptions import HTTPError
 
 from hansei.tests.api.conftest import HanseiBaseTestAPI
@@ -49,5 +51,71 @@ class TestCustomerCrud(HanseiBaseTestAPI):
         try:
             new_user.login()
             assert 0, "User data was not deleted from Koku"
+        except HTTPError:
+            pass
+
+    def test_customer_create_no_name(self, service_admin):
+        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
+        name = ''
+        owner = {
+            'username': 'owner_{}'.format(uniq_string),
+            'email': 'owner_{0}@{0}.com'.format(uniq_string),
+            'password': 'redhat', }
+        try:
+            service_admin.create_customer(name=name, owner=owner)
+        except HTTPError:
+            pass
+
+    def test_customer_create_no_owner(self, service_admin):
+        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
+        name = 'Customer {}'.format(uniq_string)
+
+        try:
+            service_admin.create_customer(name=name, owner='')
+        except HTTPError:
+            pass
+
+    def test_customer_create_no_owner_username(self, service_admin):
+        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
+        name = 'Customer {}'.format(uniq_string)
+        owner = {
+            'username': '',
+            'email': 'owner_{0}@{0}.com'.format(uniq_string),
+            'password': 'redhat', }
+        try:
+            service_admin.create_customer(name=name, owner=owner)
+        except HTTPError:
+            pass
+
+    def test_customer_create_no_owner_email(self, service_admin):
+        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
+        name = 'Customer {}'.format(uniq_string)
+        owner = {
+            'username': 'owner_{}'.format(uniq_string),
+            'email': '',
+            'password': 'redhat', }
+        try:
+            service_admin.create_customer(name=name, owner=owner)
+        except HTTPError:
+            pass
+
+    def test_customer_create_owner_invalid_email(self, service_admin):
+        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
+        name = 'Customer {}'.format(uniq_string)
+        owner = {
+            'username': 'owner_{}'.format(uniq_string),
+            'email': 'user_{0}{0}.com'.format(uniq_string),
+            'password': 'redhat', }
+        try:
+            service_admin.create_customer(name=name, owner=owner)
+        except HTTPError:
+            pass
+
+    def test_customer_delete_invalid_uuid(self, service_admin):
+        """Try to delete customer with invalid uuid"""
+        # All requests will throw an exception if response is an error code
+
+        try:
+            service_admin.delete_customer(uuid.uuid1())
         except HTTPError:
             pass
