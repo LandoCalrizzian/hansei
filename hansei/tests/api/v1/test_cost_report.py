@@ -40,29 +40,26 @@ pytest_param_all_query_param = [
 ]
 
 @pytest.mark.parametrize("report_filter,group_by", pytest_param_all_query_param)
-def test_validate_totalcost(report_filter, group_by):
+def test_validate_totalcost(session_customers, report_filter, group_by):
     """
     Test to validate the total cost across daily and monthly query parameters.
     The total cost should be equal to the sum of all the daily costs
     """
 
     # Login as test_customer
-    customer = KokuCustomer(
-        owner={'username': 'test_customer', 'password': 'str0ng!P@ss', 'email': 'foo@bar.com'})
+    for customer in session_customers.values():
+        report = KokuCostReport(customer.owner.client)
+        report.get(report_filter=report_filter, group_by=group_by)
 
-    customer.login()
-    report = KokuCostReport(customer.client)
-    report.get(report_filter=report_filter, group_by=group_by)
-
-    # Calculate sum of daily costs
-    cost_sum = report.calculate_total()
+        # Calculate sum of daily costs
+        cost_sum = report.calculate_total()
 
 
-    if cost_sum is None:
-        assert len(report.report_line_items()) == 0, (
-            "Total cost is None but there are costs in the report")
-    else:
-        assert report.total['value'] - DEVIATION <= cost_sum <= \
-            report.total['value'] + DEVIATION, (
-            'Report total is not equal to the sum of daily costs')
+        if cost_sum is None:
+            assert len(report.report_line_items()) == 0, (
+                "Total cost is None but there are costs in the report")
+        else:
+            assert report.total['value'] - DEVIATION <= cost_sum <= \
+                report.total['value'] + DEVIATION, (
+                'Report total is not equal to the sum of daily costs')
 

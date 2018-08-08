@@ -61,28 +61,23 @@ pytest_param_all_query_param = [
 
 
 @pytest.mark.parametrize("report_filter,group_by", pytest_param_all_query_param)
-def test_validate_instance_uptime(report_filter, group_by):
+def test_validate_instance_uptime(session_customers, report_filter, group_by):
     """Test to validate the total instance uptime across daily and monthly query
     parameters. The total instance uptime should be equal to the sum of instance
     uptime from the individual line items.
     """
 
-    # Login as test_customer
-    customer = KokuCustomer(
-        owner={'username': 'test_customer', 'password': 'str0ng!P@ss',
-               'email': 'foo@bar.com'})
+    for customer in session_customers.values():
+        report = KokuInstanceReport(customer.owner.client)
+        report.get(report_filter=report_filter, group_by=group_by)
 
-    customer.login()
-    report = KokuInstanceReport(customer.client)
-    report.get(report_filter=report_filter, group_by=group_by)
+        # Get total VM uptime of all instances by adding individual items in the report
+        vm_uptime = report.calculate_total()
 
-    # Get total VM uptime of all instances by adding individual items in the report
-    vm_uptime = report.calculate_total()
-
-    if vm_uptime is None:
-        assert len(report.report_line_items()) == 0, (
-            'VM uptime is None but the report shows instances')
-    else:
-        assert report.total['count'] == vm_uptime, (
-            'Report total is not equal to the sum of VM uptime from \
-            individual items')
+        if vm_uptime is None:
+            assert len(report.report_line_items()) == 0, (
+                'VM uptime is None but the report shows instances')
+        else:
+            assert report.total['count'] == vm_uptime, (
+                'Report total is not equal to the sum of VM uptime from \
+                individual items')

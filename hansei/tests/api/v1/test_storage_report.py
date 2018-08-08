@@ -45,29 +45,24 @@ pytest_param_all_query_param = [
 
 
 @pytest.mark.parametrize("report_filter,group_by", pytest_param_all_query_param)
-def test_validate_storage(report_filter, group_by):
+def test_validate_storage(session_customers, report_filter, group_by):
     """Test to validate the total storage usage across daily and monthly query
     parameters. The total storage usage should be equal to the sum of storage
     usage from the individual line items.
     """
 
-    # Login as test_customer
-    customer = KokuCustomer(
-        owner={'username': 'test_customer', 'password': 'str0ng!P@ss',
-               'email': 'foo@bar.com'})
+    for customer in session_customers.values():
+        report = KokuStorageReport(customer.owner.client)
+        report.get(report_filter=report_filter, group_by=group_by)
 
-    customer.login()
-    report = KokuStorageReport(customer.client)
-    report.get(report_filter=report_filter, group_by=group_by)
+        # Calculate sum of storage used from individual line items
+        storage_used = report.calculate_total()
 
-    # Calculate sum of storage used from individual line items
-    storage_used = report.calculate_total()
-
-    if storage_used is None:
-        assert len(report.report_line_items()) == 0, (
-            "Total storage used is None but the report shows storage usage")
-    else:
-        assert report.total['value'] - DEVIATION <= storage_used <= \
-            report.total['value'] + DEVIATION, (
-            'Report total is not equal to the sum of storage used from \
-            individual items')
+        if storage_used is None:
+            assert len(report.report_line_items()) == 0, (
+                "Total storage used is None but the report shows storage usage")
+        else:
+            assert report.total['value'] - DEVIATION <= storage_used <= \
+                report.total['value'] + DEVIATION, (
+                'Report total is not equal to the sum of storage used from \
+                individual items')
