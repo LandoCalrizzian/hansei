@@ -6,7 +6,7 @@ from hansei.koku_models import KokuCustomer, KokuProvider, KokuServiceAdmin, Kok
 
 
 @pytest.mark.smoke
-class TestUserCrud(object):
+class TestProviderNegative(object):
     @pytest.fixture(scope='class')
     def service_admin(self):
         koku_config = config.get_config().get('koku', {})
@@ -65,36 +65,3 @@ class TestUserCrud(object):
             billing_source=provider_config.get('billing_source'))
 
         return provider
-
-    def test_provider_create(self, provider):
-        """Create a new provider"""
-
-        # All requests will throw an exception if response is an error code
-        assert provider.uuid, 'No uuid created for provider'
-
-    def test_provider_read(self, provider, user):
-        """Read the provider data from the server"""
-        server_provider = user.read_provider(provider.uuid)
-
-        # TODO: Overload equivalence for KokuObjects
-        assert server_provider.uuid == provider.uuid, 'Provider info cannot be read from the server'
-
-        provider_list = user.list_providers()
-        assert len(provider_list) > 0, 'No providers available on server'
-
-        provider_uuid_list = [provider.uuid for provider in provider_list]
-        assert provider.uuid in provider_uuid_list, 'Provider uuid is not listed in the Koku server list'
-
-
-    @pytest.mark.skip(reason="User update not implemented")
-    def test_provider_update(self):
-        """Update an existing provider"""
-        assert 0
-
-    def test_provider_delete(self, provider, user):
-        """Delete the provider from the server"""
-        user.delete_provider(provider.uuid)
-        provider_list = user.list_providers()
-
-        for server_provider in provider_list:
-            assert server_provider.uuid != provider.uuid, "User was not deleted from the koku server"

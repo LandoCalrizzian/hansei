@@ -1,22 +1,45 @@
 ---
 koku:
-    # this is how you would configure koku if running
-    # the development server
-    # if running in a container, set the port to 443
-    # and https to true. Keep ssl-verify false unless you've
-    # set up the certificates
-    hostname: '127.0.0.1'
-    https: false
-    port: 8000
-    ssl-verify: false
-    # credentials for logging into the server
-    username: 'admin'
-    password: 'pass'
-providers:
-    # List of the providers to add to the koku server.
-    - name: 'My Company AWS Production'
+  # this is how you would configure koku if running
+  # the development server
+  # if running in a container, set the port to 443
+  # and https to true. Keep ssl-verify false unless you've
+  # set up the certificates
+  hostname: '127.0.0.1'
+  https: false
+  port: 8000
+  ssl-verify: false
+  # credentials for logging into the server
+  username: 'admin'
+  password: 'pass'
+customers:
+  # List of customers,users,providers to be added to the koku app
+  - name: 'Example Customer, Inc.'
+    owner:
+      username: example_owner
+      email: 'owner@example.com'
+      password: null
+    # Tags will be used to specify how this customer can be used in testing
+    ## crud - will be block this customer from being loaded automatically load on start
+    tags: []
+    providers: 
+    # List of the providers to add to this customer on the koku server.
+    - name: 'My Example AWS Production'
       authentication:
-        provider_resource_name: 'arn:aws:iam::PRODUCTION-ACCOUNT-ID:role/CostData'
+        provider_resource_name: 'arn:aws:iam::PRODUCTION-ACCOUNT-ID:role/EXAMPLECOSTDATA'
       type: 'AWS'
       billing_source:
-        bucket: 'cost_s3'
+        bucket: 'example_cost_s3'
+    # List of users you want to add to parent company
+    users:
+      - username: example_user
+        email: user@example.com
+        password: null
+        providers:
+        # List of the providers to assign to this user on the koku server.
+        - name: 'My Example User AWS Production'
+          authentication:
+            provider_resource_name: 'arn:aws:iam::PRODUCTION-ACCOUNT-ID:role/CostDataUser'
+          type: 'AWS'
+          billing_source:
+            bucket: 'example_cost_s3_user'

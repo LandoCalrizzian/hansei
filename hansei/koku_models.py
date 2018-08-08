@@ -218,6 +218,25 @@ class KokuObject(object):
         self.client.logout()
         return self.client.token is None
 
+    def list_users(self):
+        """Retrieve the list of users on the Koku Server
+
+        Returns: List of ``hansei.koku_models.KokuUser`` objects
+        """
+        user_list = []
+        response = self.client.get(KOKU_USER_PATH)
+
+        assert response, 'Unable to retrieve user list in {}.list_users()'.format(
+            self.__class__)
+
+        for user_response in response.json()['results']:
+            tmp_user = KokuUser()
+            tmp_user.load(user_response)
+            user_list.append(tmp_user)
+
+        return user_list
+
+
 
 class KokuServiceAdmin(KokuObject):
     """Class to perform actions as the Koku Service Admin"""
@@ -325,28 +344,30 @@ class KokuCustomer(KokuObject):
         Arguments:
             client - If None, un-authenticated ``hansei.api.client`` will be created
                 else, Existing  object to use for authentication.
-                If provided, client authentication should match any supplied customer with name.
+                If provided, client authentication should match any supplied
+                customer with name.
             uuid - UUID of an existing customer
             name - Name of the customer
-            owner - Customer owner information
-                Dictionary Keys:
-                    username - Username for the owner
-                    email - Owner email address
-                    password - Owner user password
+            owner - KokuUser object to set as the Customer owner.
+                Owner.client will be used for all customer REST API calls
         """
-        super().__init__(client=client, uuid=uuid, authenticate=False)
+        super().__init__(client=None, uuid=uuid, authenticate=False)
         # If no client specified create ``api.Client`` with no authentication
-        self.client = client or api.Client(authenticate=False)
         self.name = name
-        self.owner = owner
+        if owner:
+            self.owner = KokuUser(
+                client=client, **owner)
+        else:
+            self.owner = KokuUser( client=client, username=None, email=None, password=None)
+
         self.endpoint = KOKU_CUSTOMER_PATH
 
     def login(self):
         """Login as the customer owner
         Authentication info is provided by the ``KokuCustomer.owner`` dictionary
         """
-        self.client.login(self.owner['username'], self.owner['password'])
-        return self.client.token is not None
+        self.owner.login()
+        return self.owner.client.token is not None
 
     def load(self, payload):
         """Populate the object data from the response of a GET request
@@ -356,13 +377,13 @@ class KokuCustomer(KokuObject):
         """
         self.uuid = payload['uuid']
         self.name = payload['name']
-        self.owner = payload['owner']
+        self.owner = KokuUser(**payload['owner'])
 
     def payload(self):
         """Return a dictionary for POST or PUT requests."""
         payload = {
             "name": self.name,
-            "owner": self.owner,
+            "owner": self.owner.payload() if self.owner else None,
         }
         return payload
 
@@ -378,7 +399,7 @@ class KokuCustomer(KokuObject):
         Returns: ``hansei.koku_models.KokuUser`` object
         """
         user = KokuUser(username=username, email=email, password=password)
-        user._create(self.client)
+        user._create(self.owner.client)
         return user
 
     def read_user(self, uuid):
@@ -390,7 +411,7 @@ class KokuCustomer(KokuObject):
         Returns: ``hansei.koku_models.KokuUser`` object
         """
         user = KokuUser(uuid=uuid)
-        user.load(user._read(self.client).json())
+        user.load(user._read(self.owner.client).json())
         return user
 
 
@@ -401,7 +422,7 @@ class KokuCustomer(KokuObject):
             uuid - Koku uuid of the user to delete
         """
         user = KokuUser(uuid=uuid)
-        user._delete(self.client)
+        user._delete(self.owner.client)
 
     #TODO: This should be in KokuObject since all authenticated 'users' can query
     def list_users(self):
@@ -410,7 +431,7 @@ class KokuCustomer(KokuObject):
         Returns: List of ``hansei.koku_models.KokuUser`` objects
         """
         user_list = []
-        response = self.client.get(KOKU_USER_PATH)
+        response = self.owner.client.get(KOKU_USER_PATH)
 
         assert response, 'Unable to retrieve user list in {}.list_users()'.format(
             self.__class__)
@@ -421,6 +442,45 @@ class KokuCustomer(KokuObject):
             user_list.append(tmp_user)
 
         return user_list
+
+    ################################################################################################
+    # Provider
+    # TODO: These methods should be refactored so we can use them in KokuCustomer & KokuUser
+    ################################################################################################
+    def create_provider(self, name, authentication, provider_type, billing_source):
+        """Create a Koku Provider
+            name - Name for the provider
+            authentication - Authentication for the provider
+            provider_type - Type of provider
+            billing_source - Billing information for the provider
+        """
+        return self.owner.create_provider(name, authentication, provider_type, billing_source)
+
+    def read_provider(self, uuid):
+        """Get a Koku Provider object with assigned uuid
+
+        Args:
+            uuid - Koku uuid of the provider to retrieve
+
+        Returns: ``hansei.koku_models.KokuProvider`` object
+        """
+
+        return self.owner.read_provider(uuid)
+
+    def list_providers(self):
+        """Retrieve the list of providers assigned to the current user
+
+        Returns: List of ``hansei.koku_models.KokProvider`` objects
+        """
+        return self.owner.list_providers()
+
+    def delete_provider(self, uuid):
+        """Delete the provider specified by uuid
+
+        Arguments:
+            uuid - Koku uuid of the provider to delete
+        """
+        self.owner.delete_provider()
 
 
 class KokuUser(KokuObject):
@@ -478,9 +538,10 @@ class KokuUser(KokuObject):
         self.client.login(self.username, self.password)
         return self.client.token is not None
 
-    ##################################################
+    ################################################################################################
     # Provider
-    ##################################################
+    # TODO: These methods should be refactored so we can use them in KokuCustomer & KokuUser
+    ################################################################################################
     def create_provider(self, name, authentication, provider_type, billing_source):
         """Create a Koku Provider
             name - Name for the provider

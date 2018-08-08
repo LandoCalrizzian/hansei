@@ -3,6 +3,7 @@ import pytest
 import uuid
 from requests.exceptions import HTTPError
 
+from hansei.exceptions import KokuException
 from hansei.tests.api.conftest import HanseiBaseTestAPI
 
 
@@ -11,48 +12,6 @@ class TestCustomerCrud(HanseiBaseTestAPI):
     """Create a new customer, read the customer data from the server and delete
     the customer
     """
-
-    def test_customer_create(self, new_user, new_customer):
-        assert True
-        assert new_customer.uuid, 'No customer uuid created for customer'
-
-    def test_customer_read(self, service_admin, new_customer):
-        server_customer = service_admin.read_customer(new_customer.uuid)
-
-        assert server_customer.uuid == new_customer.uuid, (
-            'Customer info cannot be read from the server')
-
-        customer_list = service_admin.list_customers()
-        assert len(customer_list) > 0, 'No customers available on server'
-
-        customer_uuid_list = [cust.uuid for cust in customer_list]
-        assert new_customer.uuid in customer_uuid_list, (
-            'Customer uuid is not listed in the Koku server list')
-
-    @pytest.mark.skip(reason="Customer update not implemented")
-    def test_customer_update(self, new_customer):
-        assert 0
-
-    def test_customer_delete(self, service_admin, new_customer, new_user,
-                             new_provider):
-        """Verify that upon deletion of customer, all users and providers associated
-        with the customer are also deleted.
-        """
-        service_admin.delete_customer(new_customer.uuid)
-        customer_list = service_admin.list_customers()
-
-        for cust in customer_list:
-            assert cust.uuid != new_customer.uuid, \
-                "Customer was not deleted from the koku server"
-
-        # TODO : In future, verify that the user and provider data has been
-        # deleted from the DB
-
-        try:
-            new_user.login()
-            assert 0, "User data was not deleted from Koku"
-        except HTTPError:
-            pass
 
     def test_customer_create_no_name(self, service_admin):
         uniq_string = fauxfactory.gen_string('alphanumeric', 8)
@@ -63,6 +22,7 @@ class TestCustomerCrud(HanseiBaseTestAPI):
             'password': 'redhat', }
         try:
             service_admin.create_customer(name=name, owner=owner)
+            raise KokuException("Customer created with no name")
         except HTTPError:
             pass
 
@@ -71,7 +31,8 @@ class TestCustomerCrud(HanseiBaseTestAPI):
         name = 'Customer {}'.format(uniq_string)
 
         try:
-            service_admin.create_customer(name=name, owner='')
+            service_admin.create_customer(name=name, owner=None)
+            raise KokuException("Customer created with no owner")
         except HTTPError:
             pass
 
@@ -84,6 +45,7 @@ class TestCustomerCrud(HanseiBaseTestAPI):
             'password': 'redhat', }
         try:
             service_admin.create_customer(name=name, owner=owner)
+            raise KokuException("Customer created with no owner username")
         except HTTPError:
             pass
 
@@ -96,6 +58,7 @@ class TestCustomerCrud(HanseiBaseTestAPI):
             'password': 'redhat', }
         try:
             service_admin.create_customer(name=name, owner=owner)
+            raise KokuException("Customer created with no owner email")
         except HTTPError:
             pass
 
@@ -108,6 +71,7 @@ class TestCustomerCrud(HanseiBaseTestAPI):
             'password': 'redhat', }
         try:
             service_admin.create_customer(name=name, owner=owner)
+            raise KokuException("Customer created with invalid owner email")
         except HTTPError:
             pass
 
@@ -117,5 +81,6 @@ class TestCustomerCrud(HanseiBaseTestAPI):
 
         try:
             service_admin.delete_customer(uuid.uuid1())
+            raise KokuException("Customer deleted with invalid uuid")
         except HTTPError:
             pass
