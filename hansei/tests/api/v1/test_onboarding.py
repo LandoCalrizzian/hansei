@@ -54,7 +54,7 @@ class TestOnboardingCRUD(HanseiBaseTestAPI):
     def test_user_update(self):
         assert 0
 
-    def test_user_update_preference(self, crud_users):
+    def test_user_preference_crud(self, crud_users):
         """ Verify that we can update the preferences for any user """
         for user in crud_users:
             name = 'editor'

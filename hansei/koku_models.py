@@ -622,6 +622,15 @@ class KokuUser(KokuObject):
         payload = {'name': name, 'preference': preference, 'description': description, }
         return self.client.post(self.path_user_preference(), payload=payload)
 
+    def list_preferences(self):
+        """
+        Retrieve the list of preferences for the current user on the Koku Server
+
+        Returns: List of prefence json objects
+        """
+
+        return self.client.get(self.path_user_preference()).json()['results']
+
     def read_preference(self, pref_uuid=None):
         """Send GET request for user preference(s)
         Argument:

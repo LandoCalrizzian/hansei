@@ -144,8 +144,8 @@ class HanseiBaseTestAPI(object):
         uniq_string = fauxfactory.gen_string('alphanumeric', 8)
         name = 'Customer {}'.format(uniq_string)
         owner = {
-            'username': 'owner_{}'.format(uniq_string),
-            'email': 'owner_{0}@{0}.com'.format(uniq_string),
+            'username': 'hansei_owner_{}'.format(uniq_string),
+            'email': 'hansei_owner_{0}@{0}.com'.format(uniq_string),
             'password': 'redhat', }
 
         return service_admin.create_customer(name=name, owner=owner)
@@ -159,8 +159,8 @@ class HanseiBaseTestAPI(object):
             new_customer.login()
 
         return new_customer.create_user(
-            username='user_{}'.format(uniq_string),
-            email='user_{0}@{0}.com'.format(uniq_string),
+            username='hansei_user_{}'.format(uniq_string),
+            email='hansei_user_{0}@{0}.com'.format(uniq_string),
             password='redhat')
 
     @pytest.fixture(scope='class')
