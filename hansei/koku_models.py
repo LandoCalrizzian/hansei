@@ -480,7 +480,7 @@ class KokuCustomer(KokuObject):
         Arguments:
             uuid - Koku uuid of the provider to delete
         """
-        self.owner.delete_provider()
+        self.owner.delete_provider(uuid)
 
 
 class KokuUser(KokuObject):

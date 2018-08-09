@@ -1,67 +1,108 @@
 import fauxfactory
 import pytest
+import uuid
+
+from requests.exceptions import HTTPError
 
 from hansei import config
 from hansei.koku_models import KokuCustomer, KokuProvider, KokuServiceAdmin, KokuUser
-
+from hansei.tests.api.conftest import HanseiBaseTestAPI
 
 @pytest.mark.smoke
-class TestProviderNegative(object):
+class TestProviderNegative(HanseiBaseTestAPI):
     @pytest.fixture(scope='class')
-    def service_admin(self):
-        koku_config = config.get_config().get('koku', {})
+    def provider_config(self, config_crud_customer):
+        """ Traverse the customer config to find a valid provider to use for negative testing """
+        provider = None
+        if config_crud_customer.get('providers'):
+            return next((provider for provider in config_crud_customer['providers']), None)
 
-        return KokuServiceAdmin(
-            username=koku_config.get('username'), password=koku_config.get('password'))
+        for user in config_crud_customer.get('users') or []:
+            if user.get('providers'):
+                return next((provider for provider in user['providers']), None)
 
-    @pytest.fixture(scope='class')
-    def customer(self, service_admin):
-        """Create a new Koku customer with random info"""
-        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
-        name = 'Customer {}'.format(uniq_string)
-        owner = {
-            'username': 'owner_{}'.format(uniq_string),
-            'email': 'owner_{0}@{0}.com'.format(uniq_string),
-            'password': 'redhat', }
+        return None
 
-        #TODO: Implement lazy authentication of the client for new KokuObject()
-        customer = service_admin.create_customer(name=name, owner=owner)
-        customer.login()
-        assert customer.uuid, 'No customer uuid created for customer'
+    def test_provider_create_no_name(self, crud_customer, provider_config):
+        try:
+            crud_customer.create_provider(
+                name=None,
+                authentication=provider_config['authentication'],
+                provider_type=provider_config['type'],
+                billing_source=provider_config['billing_source'])
+            raise KokuException("Provider was created with no name")
+        except HTTPError:
+            pass
 
-        yield customer
+    def test_provider_create_no_type(self, crud_customer, provider_config):
+        try:
+            crud_customer.create_provider(
+                name=provider_config['name'],
+                authentication=provider_config['authentication'],
+                provider_type=None,
+                billing_source=provider_config['billing_source'])
+            raise KokuException("Provider was created with no type")
+        except HTTPError:
+            pass
 
-        service_admin.delete_customer(customer.uuid)
+    def test_provider_create_no_type_aws(self, crud_customer, provider_config):
+        try:
+            crud_customer.create_provider(
+                name=provider_config['name'],
+                authentication=provider_config['authentication'],
+                provider_type='FOO',
+                billing_source=provider_config['billing_source'])
+            raise KokuException("Provider was created with type other than aws")
+        except HTTPError:
+            pass
 
-    @pytest.fixture(scope='class')
-    def user(self, customer):
-        """Create a new Koku user without authenticating to the server"""
-        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
+    def test_provider_create_no_aws_resource_name(self, crud_customer, provider_config):
+        try:
+            crud_customer.create_provider(
+                name=provider_config['name'],
+                authentication=None,
+                provider_type=provider_config['type'],
+                billing_source=provider_config['billing_source'])
+            raise KokuException("Provider was created with no resource name")
+        except HTTPError:
+            pass
 
-        #TODO: Implement lazy authentication of the client for new KokuObject() fixtures
-        user = customer.create_user(
-            username='user_{}'.format(uniq_string),
-            email='user_{0}@{0}.com'.format(uniq_string),
-            password='redhat')
+    def test_provider_create_no_billing_source(self, crud_customer, provider_config):
+        try:
+            crud_customer.create_provider(
+                name=provider_config['name'],
+                authentication=provider_config['authentication'],
+                provider_type=provider_config['type'],
+                billing_source=None)
+            raise KokuException("Provider was created with no billing source")
+        except HTTPError:
+            pass
 
-        user.login()
-        yield user
+    def test_provider_create_no_bucket(self, crud_customer, provider_config):
+        try:
+            crud_customer.create_provider(
+                name=provider_config['name'],
+                authentication=provider_config['authentication'],
+                provider_type=provider_config['type'],
+                billing_source={'bucket': None})
+            raise KokuException("Provider was created with no bucket")
+        except HTTPError:
+            pass
 
-        customer.delete_user(user.uuid)
+    def test_provider_delete_invalid_uuid(self, crud_customer, provider_config):
+        """Try: to delete a provider using an invalid uuid"""
 
-    @pytest.fixture(scope='class')
-    def provider(self, user):
-        """Create a new KokuProvder"""
-        uniq_string = fauxfactory.gen_string('alphanumeric', 8)
-        #Grab the first AWS provider
-        provider_config = [
-            prov for prov in config.get_config().get('providers', {}) if prov['type'] == 'AWS'][0]
+        try:
+            crud_customer.delete_provider(uuid.uuid1())
+            raise KokuException("Provider delete was successful with an invalid uuid")
+        except HTTPError:
+            pass
 
-        #TODO: Implement lazy authentication of the client for new KokuObject() fixtures
-        provider = user.create_provider(
-            name='Provider {} for user {}'.format(uniq_string, user.username),
-            authentication=provider_config.get('authentication'),
-            provider_type=provider_config.get('type'),
-            billing_source=provider_config.get('billing_source'))
+    def test_provider_get_invalid_uuid(self, crud_customer, provider_config):
+        """Try: to get a provider using an invalid uuid"""
 
-        return provider
+        try:
+            crud_customer.read_user(uuid.uuid1())
+            raise KokuException("Provider retrieval was successful with an invalid uuid")
+        except HTTPError:
+            pass
