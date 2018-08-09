@@ -10,49 +10,6 @@ from hansei.tests.api.conftest import HanseiBaseTestAPI
 class TestOnboardingCRUD(HanseiBaseTestAPI):
     """ Test the CRUD operations for onboarding of customers, users, providers """
 
-    @pytest.fixture(scope='class')
-    def config_crud_customer(self, customer_config):
-        """ Find the first customer in the config that is tagged as CRUD """
-        config_customer = next(
-            (customer for customer in customer_config if 'crud' in customer['tags']), None)
-
-        assert config_customer, "No customer tagged as 'crud' was found in the config"
-
-        return config_customer
-
-    @pytest.fixture(scope='class')
-    def crud_customer(self, config_crud_customer, service_admin):
-        if not config_crud_customer['owner']['password']:
-            config_crud_customer['owner']['password'] = 'redhat'
-
-        customer = service_admin.create_customer(
-            config_crud_customer['name'], config_crud_customer['owner'])
-
-        assert customer, "No CRUD customer was created"
-
-        customer.login()
-
-        return customer
-
-    @pytest.fixture(scope='class')
-    def crud_users(self, config_crud_customer, crud_customer):
-        """ Create a new user(s) based off the crud customer from the config """
-        users = []
-
-        for config_user in config_crud_customer['users']:
-            user = crud_customer.create_user(
-                username=config_user['username'],
-                email=config_user['email'],
-                password=config_user['password'] or 'redhat')
-
-            assert  user.login(), "No token assigned to the user after login"
-
-            assert user.uuid, "No uuid was assigned to this user"
-
-            users.append(user)
-
-        return users
-
     def test_customer_create(self, service_admin, crud_customer):
         assert crud_customer.uuid, (
             "Customer {} was not assigned a UUID".format(crud_customer.name))
