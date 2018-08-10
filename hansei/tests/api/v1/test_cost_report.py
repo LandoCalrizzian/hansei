@@ -54,7 +54,6 @@ def test_validate_totalcost(session_customers, report_filter, group_by):
         # Calculate sum of daily costs
         cost_sum = report.calculate_total()
 
-
         if cost_sum is None:
             assert len(report.report_line_items()) == 0, (
                 "Total cost is None but there are costs in the report")

@@ -34,30 +34,32 @@ def service_admin(koku_config):
 @pytest.fixture(scope='session')
 def session_customers(customer_config, service_admin):
     """
-    Get a dictionary of the existing customers and all of the customers/users/providers
-    specified in the yaml config
+    Walks the list of non-crud customers specified in the yaml config and adds
+    them to the server if they do not exist.
 
     Returns:
         Dictionary:
             Key: owner email
             Value: ``hansei.koku_models.KokuCustomer`` object
     """
-    customer_dict = dict([
+    server_customers = dict([
         [customer.owner.email, customer] for customer in service_admin.list_customers()])
 
-    for config_customer in customer_config:
+    customer_dict = {}
+
+    for yaml_customer in customer_config:
         # Skip loading any customer w/ a 'crud' tag
-        if 'crud' in config_customer.get('tags', []):
+        if 'crud' in yaml_customer.get('tags', []):
             continue
 
-        owner_email = config_customer['owner']['email']
-        if owner_email not in customer_dict:
+        owner_email = yaml_customer['owner']['email']
+        if owner_email not in server_customers:
             new_customer = service_admin.create_customer(
-                name=config_customer['name'], owner=config_customer['owner'])
+                name=yaml_customer['name'], owner=yaml_customer['owner'])
 
             new_customer.login()
 
-            for config_provider in config_customer['providers'] or []:
+            for config_provider in yaml_customer['providers'] or []:
                 new_customer.create_provider(
                     name=config_provider['name'],
                     authentication=config_provider['authentication'],
@@ -65,7 +67,7 @@ def session_customers(customer_config, service_admin):
                     billing_source=config_provider['billing_source'])
 
 
-            for config_user in config_customer['users'] or []:
+            for config_user in yaml_customer['users'] or []:
                 new_customer.create_user(
                     username=config_user['username'],
                     email=config_user['email'],
@@ -80,8 +82,10 @@ def session_customers(customer_config, service_admin):
 
             customer_dict[owner_email] = new_customer
         else:
-            # Set the password in the KokuCustomer object and login()
-            customer_dict[owner_email].owner.password = config_customer['owner']['password']
+            # Add the existing customer to the dictionary and
+            # Set the password for the KokuCustomer object and login()
+            customer_dict[owner_email] = server_customers[owner_email]
+            customer_dict[owner_email].owner.password = yaml_customer['owner']['password']
             customer_dict[owner_email].login()
 
     return customer_dict
@@ -90,12 +94,12 @@ class HanseiBaseTestAPI(object):
     @pytest.fixture(scope='class')
     def config_crud_customer(self, customer_config):
         """ Find the first customer in the config that is tagged as CRUD """
-        config_customer = next(
+        yaml_customer = next(
             (customer for customer in customer_config if 'crud' in customer['tags']), None)
 
-        assert config_customer, "No customer tagged as 'crud' was found in the config"
+        assert yaml_customer, "No customer tagged as 'crud' was found in the config"
 
-        return config_customer
+        return yaml_customer
 
     @pytest.fixture(scope='class')
     def crud_customer(self, config_crud_customer, service_admin):
@@ -117,6 +121,8 @@ class HanseiBaseTestAPI(object):
             if service_admin.read_customer(customer.uuid):
                 service_admin.delete_customer(customer.uuid)
         except HTTPError:
+            # Ignore exception since the customer may have been cleaned up
+            # by the calling test
             pass
 
     @pytest.fixture(scope='class')
@@ -136,6 +142,7 @@ class HanseiBaseTestAPI(object):
 
             users.append(user)
 
+        # These users will be deleted automatically when the customer is deleted
         return users
 
     @pytest.fixture(scope='class')
@@ -148,7 +155,18 @@ class HanseiBaseTestAPI(object):
             'email': 'hansei_owner_{0}@{0}.com'.format(uniq_string),
             'password': 'redhat', }
 
-        return service_admin.create_customer(name=name, owner=owner)
+        customer = service_admin.create_customer(name=name, owner=owner)
+        yield customer
+
+        try:
+            # Cleanup this customer if it has an assigned uuid
+            if customer.uuid:
+                service_admin.delete_customer(customer.uuid)
+        except HTTPError:
+            # Ignore exception since the customer may have been cleaned up
+            # by the calling test
+            pass
+
 
     @pytest.fixture(scope='class')
     def new_user(self, new_customer):
@@ -158,10 +176,14 @@ class HanseiBaseTestAPI(object):
         if not new_customer.logged_in:
             new_customer.login()
 
-        return new_customer.create_user(
+        user= new_customer.create_user(
             username='hansei_user_{}'.format(uniq_string),
             email='hansei_user_{0}@{0}.com'.format(uniq_string),
             password='redhat')
+
+        # This user will be deleted automatically when the customer is deleted
+        return user
+
 
     @pytest.fixture(scope='class')
     def new_provider(self, new_user):

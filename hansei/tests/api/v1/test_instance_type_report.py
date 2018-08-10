@@ -78,6 +78,6 @@ def test_validate_instance_uptime(session_customers, report_filter, group_by):
             assert len(report.report_line_items()) == 0, (
                 'VM uptime is None but the report shows instances')
         else:
-            assert report.total['count'] == vm_uptime, (
+            assert report.total['value'] == vm_uptime, (
                 'Report total is not equal to the sum of VM uptime from \
                 individual items')
