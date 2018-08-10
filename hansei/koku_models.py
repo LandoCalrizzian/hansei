@@ -1,7 +1,8 @@
 # coding: utf-8
 """Models for use with the Koku API."""
 
-import decimal
+from decimal import Decimal
+
 from pprint import pformat
 from urllib.parse import urljoin
 
@@ -835,11 +836,11 @@ class KokuBaseReport(object):
         if not self.data:
             return None
 
-        total_item = decimal.Decimal(0.0)
+        total_item = Decimal(0.0)
         item_list = self.report_line_items(self.data)
         for item in item_list:
             total_item = total_item + (
-                decimal.Decimal(item['total']) if item['total'] else 0.0)
+                Decimal(item['total']) if item['total'] else Decimal(0))
 
         # Koku will return a null total if there are no line item charges in the list
         if len(item_list) == 0:
