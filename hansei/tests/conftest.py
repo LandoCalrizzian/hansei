@@ -1,7 +1,6 @@
 """
-Global pytest plugins and hooks
+Hansei Global pytest plugins and hooks
 """
-import os
 
 from hansei import config as hansei_config, api as hansei_api
 from requests.exceptions import HTTPError
@@ -31,36 +30,3 @@ def pytest_report_header(config):
 
     return "Koku Server Info:\n{}".format(report_header)
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--koku-admin-username", action="store", default=os.environ.get('KOKU_SERVICE_ADMIN_USER'),
-        help='Set the Koku Admin Username. DEFAULT: KOKU_SERVICE_ADMIN_USER')
-    parser.addoption(
-        "--koku-admin-password", action="store", default=os.environ.get('KOKU_SERVICE_ADMIN_PASSWORD'),
-        help='Set the Koku Admin Password. DEFAULT: KOKU_SERVICE_ADMIN_PASSWORD')
-    parser.addoption(
-        "--koku-host-name", action="store", default=os.environ.get('KOKU_HOSTNAME'),
-        help='Set the Koku service hostname. DEFAULT: KOKU_HOSTNAME')
-    parser.addoption(
-        "--koku-host-port", action="store", default=os.environ.get('KOKU_PORT'),
-        help='Set the Koku service port. DEFAULT: KOKU_PORT')
-
-def pytest_configure(config):
-    koku_admin = config.getoption('koku_admin_username')
-    koku_admin_pw = config.getoption('koku_admin_password')
-    koku_hostname = config.getoption('koku_host_name')
-    koku_host_port = config.getoption('koku_host_port')
-
-    koku_config = hansei_config.get_config().get('koku', {})
-
-    if koku_admin:
-        koku_config['username'] = koku_admin
-
-    if koku_admin_pw:
-        koku_config['password'] = koku_admin_pw
-
-    if koku_hostname:
-        koku_config['hostname'] = koku_hostname
-
-    if koku_host_port:
-        koku_config['port'] = koku_host_port
