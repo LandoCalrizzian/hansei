@@ -162,12 +162,11 @@ class Client(object):
 
             if not hostname:
                 raise exceptions.KokuBaseUrlNotFound(
-                    "\n'koku' section specified in hansei config file, but"
-                    "no 'hostname' key found."
+                    "\n'koku' section specified in hansei config file, but no 'hostname' found."
                 )
 
             scheme = 'https' if cfg.get('https', False) else 'http'
-            port = str(cfg.get('port', ''))
+            port = str(cfg.get('port') or '')
             netloc = hostname + ':{}'.format(port) if port else hostname
             self.url = urlunparse(
                 (scheme, netloc, KOKU_API_VERSION, '', '', ''))
