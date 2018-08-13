@@ -95,7 +95,7 @@ class HanseiBaseTestAPI(object):
     def config_crud_customer(self, customer_config):
         """ Find the first customer in the config that is tagged as CRUD """
         yaml_customer = next(
-            (customer for customer in customer_config if 'crud' in customer['tags']), None)
+            (customer for customer in customer_config if 'crud' in customer.get('tags', [])), None)
 
         assert yaml_customer, "No customer tagged as 'crud' was found in the config"
 
@@ -130,7 +130,7 @@ class HanseiBaseTestAPI(object):
         """ Create a new user(s) based off the crud customer from the config """
         users = []
 
-        for config_user in config_crud_customer['users']:
+        for config_user in config_crud_customer['users'] or []:
             user = crud_customer.create_user(
                 username=config_user['username'],
                 email=config_user['email'],
