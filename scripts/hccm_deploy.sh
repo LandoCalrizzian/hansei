@@ -114,7 +114,9 @@ if [[ -d $APP_NAME ]]; then
 fi
 
 echo Cloning the $APP_NAME repo $GIT_URL
-git clone $GIT_URL $APP_NAME -b $GIT_BRANCH
+# Clone repo and checkout specific branch or revision for testing
+git clone $GIT_URL $APP_NAME
+git checkout -q $GIT_BRANCH
 
 echo Moving to repo dir $APP_NAME
 pushd $APP_NAME
