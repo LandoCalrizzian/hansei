@@ -14,6 +14,8 @@ fauxfactory = "*"
 
 [dev-packages]
 pylint = "*"
+"boto3" = "*"
+awscli = "*"
 
 [requires]
 python_version = "3.6"
