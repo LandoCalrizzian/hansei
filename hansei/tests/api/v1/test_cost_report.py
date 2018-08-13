@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for cost report API
-
-The tests assume that the database is pre-populated with data including the
-Koku default 'test_customer' customer by running 'make oc-create-test-db-file'.
 """
 import pytest
 from hansei.koku_models import KokuCostReport, KokuCustomer
@@ -61,4 +58,26 @@ def test_validate_totalcost(session_customers, report_filter, group_by):
             assert report.total['value'] - DEVIATION <= cost_sum <= \
                 report.total['value'] + DEVIATION, (
                 'Report total is not equal to the sum of daily costs')
+
+
+@pytest.mark.parametrize("order", [None, 'desc', 'asc'])
+def test_validate_order_by(session_customers, order):
+    for customer in session_customers.values():
+        report = KokuCostReport(customer.owner.client)
+
+        report.get(order_by=['cost', order], group_by=[['account', '*']])
+
+        prev_cost = None
+        for line_item in report.report_line_items():
+            if prev_cost is None:
+                prev_cost = line_item['total']
+
+            # Default order is descening
+            if order is None or order == 'desc':
+                assert prev_cost <= line_item['total'], 'Costs not organized in decending order'
+            elif order == 'asc':
+                assert prev_cost >= line_item['total'], 'Costs not organized in ascending order'
+
+            prev_cost = line_item['total']
+
 

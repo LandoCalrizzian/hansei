@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for instance trend inventory report API
-
-The tests assume that the database is pre-populated with data including the
-Koku default 'test_customer' customer by running 'make oc-create-test-db-file'.
 """
 import pytest
 from hansei.koku_models import KokuInstanceReport, KokuCustomer
