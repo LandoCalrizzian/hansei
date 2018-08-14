@@ -16,7 +16,7 @@ class TestOnboardingCRUD(HanseiBaseTestAPI):
 
     def test_customer_read(self, service_admin, crud_customer):
         server_customer = service_admin.read_customer(crud_customer.uuid)
-        customer_list = service_admin.list_customers()
+        customer_list = service_admin.list_customers(page_size=100)
 
         assert len(customer_list) > 0, 'No customers available on server'
 
@@ -37,7 +37,7 @@ class TestOnboardingCRUD(HanseiBaseTestAPI):
     def test_user_read(self, crud_customer, crud_users):
         """ Verify that the user(s) we added can be retrieved from the server """
 
-        user_list = crud_customer.list_users()
+        user_list = crud_customer.list_users(page_size=100)
         assert len(user_list) > 0, 'No users available on server'
 
         user_uuid_list = [usr.uuid for usr in user_list]
@@ -138,7 +138,7 @@ class TestOnboardingCRUD(HanseiBaseTestAPI):
         for config_users in config_crud_customer.get('users') or []:
             config_provider_list.extend(config_users.get('providers') or [])
 
-        provider_list = crud_customer.list_providers()
+        provider_list = crud_customer.list_providers(page_size=100)
         assert len(provider_list) > 0, 'No providers available on server'
 
         # List of providers available to CRUD customer should be the same as providers in the config
@@ -165,12 +165,13 @@ class TestOnboardingCRUD(HanseiBaseTestAPI):
         user_uuid_list = [user.uuid for user in crud_users]
 
         service_admin.delete_customer(crud_customer.uuid)
-        customer_list = service_admin.list_customers()
+
+        customer_list = service_admin.list_customers(page_size=100)
 
         for cust in customer_list:
             assert cust.uuid != crud_customer.uuid, \
                 "Customer was not deleted from the koku server"
 
-        user_list = service_admin.list_users()
+        user_list = service_admin.list_users(page_size=100)
         for user in user_list:
             assert user.uuid not in user_uuid_list, "A delete user still exists on the server"

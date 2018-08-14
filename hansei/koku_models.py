@@ -219,13 +219,24 @@ class KokuObject(object):
         self.client.logout()
         return self.client.token is None
 
-    def list_users(self):
+    #TODO: Add iterator to loop over all users items returned across all pages
+    def list_users(self, page_size=None):
         """Retrieve the list of users on the Koku Server
+
+        Arguments:
+            page_size: OPTIONAL number of items to return in single query.
+                Can be used to return a higher number of items than the default
+                w/o having to rely on iterating using the 'next' url returned
+                in the response
 
         Returns: List of ``hansei.koku_models.KokuUser`` objects
         """
         user_list = []
-        response = self.client.get(KOKU_USER_PATH)
+        user_params = {}
+        if page_size:
+            user_params['page_size'] = page_size
+
+        response = self.client.get(KOKU_USER_PATH, params=user_params)
 
         assert response, 'Unable to retrieve user list in {}.list_users()'.format(
             self.__class__)
@@ -318,13 +329,25 @@ class KokuServiceAdmin(KokuObject):
         customer = KokuCustomer(uuid=uuid)
         customer._delete(self.client)
 
-    def list_customers(self):
+    #TODO: Add iterator to loop over all customers items returned across all pages
+    def list_customers(self, page_size=None):
         """Retrieve the list of customers on the Koku Server
+
+        Arguments:
+            page_size: OPTIONAL number of items to return in single query.
+                Can be used to return a higher number of items than the default
+                w/o having to rely on iterating using the 'next' url returned
+                in the response
 
         Returns: List of ``hansei.koku_models.KokuCustomer`` objects
         """
         customer_list = []
-        self.client.get(KOKU_CUSTOMER_PATH)
+        customer_params = {}
+
+        if page_size:
+            customer_params['page_size'] = page_size
+
+        self.client.get(KOKU_CUSTOMER_PATH, params=customer_params)
         assert self.client.last_response, 'Unable to retrieve customer list in {}.list_customers()'.format(
             self.__class__)
 
@@ -426,8 +449,14 @@ class KokuCustomer(KokuObject):
         user._delete(self.owner.client)
 
     #TODO: This should be in KokuObject since all authenticated 'users' can query
-    def list_users(self):
+    def list_users(self, page_size=None):
         """Retrieve the list of users on the Koku Server
+
+        Arguments:
+            page_size: OPTIONAL number of items to return in single query.
+                Can be used to return a higher number of items than the default
+                w/o having to rely on iterating using the 'next' url returned
+                in the response
 
         Returns: List of ``hansei.koku_models.KokuUser`` objects
         """
@@ -468,12 +497,19 @@ class KokuCustomer(KokuObject):
 
         return self.owner.read_provider(uuid)
 
-    def list_providers(self):
+    #TODO: Add iterator to loop over all providers items returned across all pages
+    def list_providers(self, page_size=None):
         """Retrieve the list of providers assigned to the current user
+
+        Arguments:
+            page_size: OPTIONAL number of items to return in single query.
+                Can be used to return a higher number of items than the default
+                w/o having to rely on iterating using the 'next' url returned
+                in the response
 
         Returns: List of ``hansei.koku_models.KokProvider`` objects
         """
-        return self.owner.list_providers()
+        return self.owner.list_providers(page_size=page_size)
 
     def delete_provider(self, uuid):
         """Delete the provider specified by uuid
@@ -571,13 +607,25 @@ class KokuUser(KokuObject):
         provider.load(provider._read(self.client).json())
         return provider
 
-    def list_providers(self):
+    #TODO: Add iterator to loop over all providers items returned across all pages
+    def list_providers(self, page_size=None):
         """Retrieve the list of providers assigned to the current user
+
+        Arguments:
+            page_size: OPTIONAL number of items to return in single query.
+                Can be used to return a higher number of items than the default
+                w/o having to rely on iterating using the 'next' url returned
+                in the response
 
         Returns: List of ``hansei.koku_models.KokProvider`` objects
         """
         providerlist = []
-        response = self.client.get(KOKU_PROVIDER_PATH)
+        provider_params = {}
+
+        if page_size:
+            provider_params['page_size'] = page_size
+
+        response = self.client.get(KOKU_PROVIDER_PATH, params=provider_params)
 
         assert response, 'Unable to retrieve provider list in KokuUser.list_providers()'
 
@@ -623,14 +671,26 @@ class KokuUser(KokuObject):
         payload = {'name': name, 'preference': preference, 'description': description, }
         return self.client.post(self.path_user_preference(), payload=payload)
 
-    def list_preferences(self):
+    #TODO: Add iterator to loop over all preferences items returned across all pages
+    def list_preferences(self, page_size=None):
         """
         Retrieve the list of preferences for the current user on the Koku Server
+
+        Arguments:
+            page_size: OPTIONAL number of items to return in single query.
+                Can be used to return a higher number of items than the default
+                w/o having to rely on iterating using the 'next' url returned
+                in the response
 
         Returns: List of prefence json objects
         """
 
-        return self.client.get(self.path_user_preference()).json()['results']
+        preference_params = {}
+
+        if page_size:
+            preference_params['page_size'] = page_size
+
+        return self.client.get(self.path_user_preference(), params=preference_params).json()['results']
 
     def read_preference(self, pref_uuid=None):
         """Send GET request for user preference(s)
