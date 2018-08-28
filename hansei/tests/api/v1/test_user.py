@@ -77,7 +77,6 @@ class TestUserNegativeInput(HanseiBaseTestAPI):
 #Bugz Filed for failing user preference tests
 #https://github.com/project-koku/koku/issues/308
 #https://github.com/project-koku/koku/issues/309
-@pytest.mark.skip(reason="User preferences validation will be implemented in Release 2")
 @pytest.mark.smoke
 class TestUserPreferenceNegativeInput(HanseiBaseTestAPI):
     def test_user_preference_create_no_name(self, new_user):
