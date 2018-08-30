@@ -862,7 +862,8 @@ class KokuBaseReport(object):
                 # Once we hit 'values' key it will be a list that contains all
                 # of the costs or storage usage for 'time_scope_units'
                 if 'values' in root_object:
-                    return line_item_list + root_object['values']
+                    line_item_list.append(root_object['values'])
+                    return line_item_list
 
                 for key, val in root_object.items():
                     if type(val) in [list, dict]:
@@ -872,11 +873,66 @@ class KokuBaseReport(object):
 
     def report_line_items(self, data=None):
         """
-        Returns a list of the 'total' value of an item fetched from the individual rows in the
-        report.The item could be total cost/storage usage/VM uptime.
+        Returns a list containing the 'values' list of each line item.
+
+        Example:
+
+        data: [{
+            "date": "2018-08",
+            "accounts": [
+                {
+                    "account": "0840549025238",
+                    "values": [
+                        {
+                            "date": "2018-08",
+                            "units": "GB-Mo",
+                            "account": "0840549025238",
+                            "total": 4066.923135971
+                        },
+                        {
+                            "date": "2018-08",
+                            "units": "GB-Mo",
+                            "account": "0840549025238",
+                            "total": 1222.879732291
+                        }
+                    ]
+                },
+                {
+                    "account": "3082416796941",
+                    "values": [
+                        {
+                            "date": "2018-08",
+                            "units": "GB-Mo",
+                            "account": "3082416796941",
+                            "total": 3644.58070225345
+                        }
+                    ]
+                },
+        }]
+
+        Given the data above, the method would return
+        [
+            [{
+                "date": "2018-08",
+                "units": "GB-Mo",
+                "account": "0840549025238",
+                "total": 4066.923135971 },
+
+            { "date": "2018-08",
+                "units": "GB-Mo",
+                "account": "0840549025238",
+                "total": 1222.879732291 } ],
+
+            [ {
+                "date": "2018-08",
+                "units": "GB-Mo",
+                "account": "3082416796941",
+                "total": 3644.58070225345 }]
+
+        ]
 
         Arguments:
-            data (List OR dict)- data object as returned by a Koku report request
+            data - data object as returned by a Koku report request
         """
         data = data or self.data
 
@@ -899,8 +955,7 @@ class KokuBaseReport(object):
         total_item = Decimal(0.0)
         item_list = self.report_line_items(self.data)
         for item in item_list:
-            total_item = total_item + (
-                Decimal(item['total']) if item['total'] else Decimal(0))
+            total_item = total_item + sum([Decimal(i['total']) for i in item])
 
         # Koku will return a null total if there are no line item charges in the list
         if len(item_list) == 0:
